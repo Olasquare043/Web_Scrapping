@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ brand_name }} | {{ product_name }}</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}">
+</head>
+<body>
+  <div class="ambient ambient-a"></div>
+  <div class="ambient ambient-b"></div>
+  <div class="ambient-grid"></div>
+
+  <header class="topbar">
+    <div class="brand-wrap">
+      <div class="brand-mark" aria-hidden="true">
+        <img src="{{ url_for('static', filename='images/dialogic-signal.svg') }}" alt="">
+      </div>
+      <div class="brand-copy">
+        <p class="eyebrow">{{ brand_name }}</p>
+        <h1>{{ product_name }}</h1>
+        <p class="subcopy">Office-ready control center for country-wide lecturer and professor email extraction.</p>
+      </div>
+    </div>
+    <div class="topbar-status">
+      <span id="global-status" class="status-pill idle">
+        <span class="status-dot"></span>
+        Ready For Launch
+      </span>
+    </div>
+  </header>
+
+  <main class="dashboard-shell">
+    <section class="hero-card panel">
+      <div class="hero-content">
+        <div class="hero-chip-row">
+          <span class="mini-chip">Official Sources</span>
+          <span class="mini-chip">Review Workbook</span>
+          <span class="mini-chip">Live Streaming</span>
+        </div>
+        <h2>Run country jobs with confidence, visibility, and a polished handoff experience.</h2>
+        <p>
+          Launch extraction runs for Kenya and other African countries, stream progress in real time,
+          and deliver clean CSV and Excel outputs your team can review immediately.
+        </p>
+        <div class="hero-highlights">
+          <article class="signal-card">
+            <div class="signal-icon">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 13h4l2-7 4 13 2-6h4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+            <div>
+              <h3>Operational Clarity</h3>
+              <p>Watch seed discovery, domain resolution, and crawl completion as the run happens.</p>
+            </div>
+          </article>
+          <article class="signal-card">
+            <div class="signal-icon">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 5h16v14H4zM8 9h8M8 13h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+            <div>
+              <h3>Editable Deliverables</h3>
+              <p>Every run writes CSV plus a workbook with coverage, exclusions, domains, and crawl logs.</p>
+            </div>
+          </article>
+          <article class="signal-card">
+            <div class="signal-icon">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 4v5c0 5-3.2 7.6-7 9-3.8-1.4-7-4-7-9V7l7-4zM9.5 12.5l1.8 1.8 3.7-4.3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+            <div>
+              <h3>Office-Safe Controls</h3>
+              <p>Staff can start new runs without touching code or remembering CLI flags.</p>
+            </div>
+          </article>
+        </div>
+      </div>
+      <div class="hero-visual">
+        <div class="visual-orbit orbit-one"></div>
+        <div class="visual-orbit orbit-two"></div>
+        <div class="visual-orbit orbit-three"></div>
+        <img src="{{ url_for('static', filename='images/dialogic-signal.svg') }}" alt="Dialogic Solution visual signal map">
+        <div class="floating-brief floating-left">
+          <span>Official Domains</span>
+          <strong id="floating-domains">0 validated</strong>
+        </div>
+        <div class="floating-brief floating-right">
+          <span>Workbook Delivery</span>
+          <strong id="floating-deliverables">CSV + XLSX</strong>
+        </div>
+      </div>
+    </section>
+
+    <section class="dashboard-grid">
+      <section class="panel form-panel">
+        <div class="panel-head">
+          <div>
+            <p class="eyebrow">Launch Control</p>
+            <h2>Start A New Mining Run</h2>
+          </div>
+          <span class="panel-badge">Dialogic Ops</span>
+        </div>
+
+        <form id="run-form" class="run-form">
+          <div class="field-grid">
+            <label class="field field-large">
+              <span>Country</span>
+              <input id="country" name="country" list="country-options" placeholder="Kenya" required>
+              <small>Type any African country. The output folder is created automatically.</small>
+            </label>
+
+            <label class="field">
+              <span>Institution Limit</span>
+              <input id="limit" name="limit" type="number" min="1" placeholder="Blank for full queue">
+              <small>Use only for smoke tests.</small>
+            </label>
+
+            <label class="field">
+              <span>Workers</span>
+              <input id="workers" name="workers" type="number" min="1" max="12" value="4">
+              <small>Higher values increase concurrency.</small>
+            </label>
+
+            <label class="field field-large">
+              <span>Institutions</span>
+              <textarea id="institutions" name="institutions" rows="3" placeholder="Optional comma-separated institution names"></textarea>
+              <small>Leave blank to process the whole discovered queue.</small>
+            </label>
+
+            <label class="field">
+              <span>Max Pages</span>
+              <input id="max_pages" name="max_pages" type="number" min="1" max="120" value="30">
+              <small>First-pass HTML crawl depth per institution.</small>
+            </label>
+
+            <label class="field">
+              <span>Second Pass</span>
+              <input id="second_pass_pages" name="second_pass_pages" type="number" min="0" max="120" value="25">
+              <small>Extra pages for low-yield schools.</small>
+            </label>
+
+            <label class="field field-large">
+              <span>Output Folder Override</span>
+              <input id="output_dir" name="output_dir" placeholder="Blank to use <country>_profs">
+              <small>Use `Test/...` for temporary validation runs.</small>
+            </label>
+          </div>
+
+          <div class="action-row">
+            <button id="run-button" type="submit" class="primary-button">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z" fill="currentColor"/></svg>
+              Launch Run
+            </button>
+            <button id="refresh-jobs" type="button" class="secondary-button">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M20 11a8 8 0 10-2.3 5.7M20 4v7h-7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              Refresh Activity
+            </button>
+          </div>
+        </form>
+
+        <datalist id="country-options">
+          {% for country in example_countries %}
+          <option value="{{ country }}"></option>
+          {% endfor %}
+        </datalist>
+      </section>
+
+      <section class="panel status-panel">
+        <div class="panel-head">
+          <div>
+            <p class="eyebrow">Live Status</p>
+            <h2>Run Telemetry</h2>
+          </div>
+          <div id="job-pill" class="panel-badge panel-badge-muted">No Active Job</div>
+        </div>
+
+        <div class="status-hero">
+          <div>
+            <p class="status-caption">Current Stage</p>
+            <h3 id="stage-title">Standby</h3>
+            <p id="stage-message">Launch a run to begin streaming progress from the extraction pipeline.</p>
+          </div>
+          <div class="status-rings">
+            <div class="ring-core"></div>
+            <div class="ring-wave ring-wave-a"></div>
+            <div class="ring-wave ring-wave-b"></div>
+          </div>
+        </div>
+
+        <div class="metric-grid">
+          <article class="metric-card">
+            <span>Seed Institutions</span>
+            <strong id="metric-seeds">0</strong>
+          </article>
+          <article class="metric-card">
+            <span>Resolved Domains</span>
+            <strong id="metric-domains">0</strong>
+          </article>
+          <article class="metric-card">
+            <span>Institutions With Records</span>
+            <strong id="metric-institutions">0</strong>
+          </article>
+          <article class="metric-card">
+            <span>Final Rows</span>
+            <strong id="metric-rows">0</strong>
+          </article>
+          <article class="metric-card">
+            <span>Unique Emails</span>
+            <strong id="metric-emails">0</strong>
+          </article>
+          <article class="metric-card">
+            <span>Excluded Rows</span>
+            <strong id="metric-excluded">0</strong>
+          </article>
+        </div>
+
+        <div class="timeline-strip">
+          <div class="timeline-step active">
+            <span class="timeline-icon">1</span>
+            <div>
+              <strong>Discover</strong>
+              <p>Official source pages</p>
+            </div>
+          </div>
+          <div class="timeline-step">
+            <span class="timeline-icon">2</span>
+            <div>
+              <strong>Resolve</strong>
+              <p>Institution domains</p>
+            </div>
+          </div>
+          <div class="timeline-step">
+            <span class="timeline-icon">3</span>
+            <div>
+              <strong>Crawl</strong>
+              <p>Staff and PDF pages</p>
+            </div>
+          </div>
+          <div class="timeline-step">
+            <span class="timeline-icon">4</span>
+            <div>
+              <strong>Export</strong>
+              <p>CSV and workbook</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="panel artifacts-panel">
+        <div class="panel-head">
+          <div>
+            <p class="eyebrow">Artifacts</p>
+            <h2>Open Or Download Outputs</h2>
+          </div>
+          <span class="panel-badge panel-badge-muted">Windows Ready</span>
+        </div>
+
+        <div class="artifact-grid">
+          <article class="artifact-card">
+            <div class="artifact-icon">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 7h7l2 2h9v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+            <div class="artifact-body">
+              <h3>Output Folder</h3>
+              <p id="artifact-output-dir">Run a job to generate an output folder.</p>
+            </div>
+            <div class="artifact-actions">
+              <button data-artifact="output_dir" data-action="reveal" class="artifact-button" disabled>Reveal</button>
+            </div>
+          </article>
+
+          <article class="artifact-card">
+            <div class="artifact-icon">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3h8l5 5v13H8a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2zM16 3v5h5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+            <div class="artifact-body">
+              <h3>CSV Export</h3>
+              <p id="artifact-csv">CSV becomes available after a successful run.</p>
+            </div>
+            <div class="artifact-actions">
+              <a id="download-csv" class="artifact-button ghost" href="#" aria-disabled="true">Download</a>
+            </div>
+          </article>
+
+          <article class="artifact-card">
+            <div class="artifact-icon">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5zM9 8h6M9 12h6M9 16h4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
+            <div class="artifact-body">
+              <h3>Workbook</h3>
+              <p id="artifact-xlsx">Workbook includes Summary, Crawl Log, Domains, and Review_Excluded.</p>
+            </div>
+            <div class="artifact-actions">
+              <a id="download-xlsx" class="artifact-button ghost" href="#" aria-disabled="true">Download</a>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="panel console-panel">
+        <div class="panel-head">
+          <div>
+            <p class="eyebrow">Command Stream</p>
+            <h2>Live Operator Console</h2>
+          </div>
+          <span id="console-counter" class="panel-badge panel-badge-muted">0 events</span>
+        </div>
+        <div id="log-console" class="log-console"></div>
+      </section>
+
+      <section class="panel activity-panel">
+        <div class="panel-head">
+          <div>
+            <p class="eyebrow">Activity</p>
+            <h2>Recent Runs</h2>
+          </div>
+          <span class="panel-badge panel-badge-muted">Newest First</span>
+        </div>
+        <div id="recent-jobs" class="recent-jobs"></div>
+      </section>
+    </section>
+  </main>
+
+  <script>
+    window.DIALOGIC_UI = {
+      brandName: {{ brand_name|tojson }},
+      productName: {{ product_name|tojson }}
+    };
+  </script>
+  <script src="{{ url_for('static', filename='dashboard.js') }}"></script>
+</body>
+</html>

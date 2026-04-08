@@ -24,8 +24,10 @@ The pipeline only uses public data from official sources. It does not use logins
 
 - `nigeria_profs/`: legacy Nigeria scripts and outputs
 - `country_pipelines/`: generic country discovery and crawling engine
+- `office_dashboard/`: Dialogic Solution local office interface
 - `shared/`: reusable extraction and export helpers
 - `run_country_professor_extraction.py`: generic CLI entrypoint
+- `run_dialogic_dashboard.py`: dashboard launcher
 - `Test/`: temporary smoke runs and debug outputs only
 
 ## Install
@@ -35,6 +37,38 @@ Use Python 3.11+ if possible.
 ```bash
 python -m pip install -r requirements.txt
 ```
+
+## Dialogic Solution Office Dashboard
+
+For staff who should run jobs without working in the terminal, launch the branded local dashboard:
+
+```bash
+python run_dialogic_dashboard.py
+```
+
+or on Windows:
+
+```bash
+Launch_Dialogic_Dashboard.bat
+```
+
+Default dashboard URL:
+
+```text
+http://127.0.0.1:5080/
+```
+
+The dashboard lets employees:
+
+- enter a country name
+- optionally target specific institutions
+- control crawl depth and worker count
+- watch live run events in the operator console
+- open the output folder
+- download CSV and workbook artifacts
+
+Use the dashboard for office operations.
+Use the CLI when you want more direct scripting or automation.
 
 ## Nigeria Workflow
 

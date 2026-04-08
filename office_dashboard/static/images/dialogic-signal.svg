@@ -1,0 +1,62 @@
+<svg width="720" height="720" viewBox="0 0 720 720" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="720" height="720" rx="160" fill="url(#bg)"/>
+  <circle cx="360" cy="360" r="196" fill="url(#core)" opacity="0.92"/>
+  <circle cx="360" cy="360" r="270" stroke="url(#ringA)" stroke-width="2" stroke-dasharray="12 12" opacity="0.42"/>
+  <circle cx="360" cy="360" r="312" stroke="url(#ringB)" stroke-width="2" stroke-dasharray="8 14" opacity="0.34"/>
+  <path d="M202 434C202 396.444 232.444 366 270 366H450C487.556 366 518 396.444 518 434V480C518 517.556 487.556 548 450 548H270C232.444 548 202 517.556 202 480V434Z" fill="url(#panel)"/>
+  <path d="M260 334C260 279.324 304.324 235 359 235H361C415.676 235 460 279.324 460 334V366H260V334Z" fill="url(#arch)"/>
+  <path d="M288 422H328V490H288V422Z" fill="#F3F5FF"/>
+  <path d="M340 422H380V490H340V422Z" fill="#F3F5FF"/>
+  <path d="M392 422H432V490H392V422Z" fill="#F3F5FF"/>
+  <circle cx="214" cy="236" r="20" fill="#8DF3D4"/>
+  <circle cx="532" cy="202" r="14" fill="#7FD7FF"/>
+  <circle cx="560" cy="478" r="17" fill="#FFD66B"/>
+  <circle cx="162" cy="492" r="12" fill="#FF9F8B"/>
+  <path d="M214 236L302 286" stroke="url(#beamA)" stroke-width="3" stroke-linecap="round"/>
+  <path d="M532 202L418 280" stroke="url(#beamB)" stroke-width="3" stroke-linecap="round"/>
+  <path d="M560 478L470 448" stroke="url(#beamC)" stroke-width="3" stroke-linecap="round"/>
+  <path d="M162 492L252 454" stroke="url(#beamD)" stroke-width="3" stroke-linecap="round"/>
+  <defs>
+    <linearGradient id="bg" x1="82" y1="54" x2="620" y2="648" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#091222"/>
+      <stop offset="0.52" stop-color="#0F2846"/>
+      <stop offset="1" stop-color="#081018"/>
+    </linearGradient>
+    <radialGradient id="core" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(360 360) rotate(90) scale(208)">
+      <stop stop-color="#21497B"/>
+      <stop offset="1" stop-color="#0D1830"/>
+    </radialGradient>
+    <linearGradient id="panel" x1="246" y1="380" x2="470" y2="540" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F5F7FF"/>
+      <stop offset="1" stop-color="#D6E1FF"/>
+    </linearGradient>
+    <linearGradient id="arch" x1="296" y1="246" x2="444" y2="366" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#49B6FF"/>
+      <stop offset="1" stop-color="#1A5BBA"/>
+    </linearGradient>
+    <linearGradient id="ringA" x1="90" y1="360" x2="630" y2="360" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#5BF0D0"/>
+      <stop offset="1" stop-color="#4F86FF"/>
+    </linearGradient>
+    <linearGradient id="ringB" x1="48" y1="360" x2="672" y2="360" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F4A76A"/>
+      <stop offset="1" stop-color="#7A99FF"/>
+    </linearGradient>
+    <linearGradient id="beamA" x1="214" y1="236" x2="302" y2="286" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#8DF3D4"/>
+      <stop offset="1" stop-color="#4AB3FF"/>
+    </linearGradient>
+    <linearGradient id="beamB" x1="532" y1="202" x2="418" y2="280" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#A3D6FF"/>
+      <stop offset="1" stop-color="#7F9DFF"/>
+    </linearGradient>
+    <linearGradient id="beamC" x1="560" y1="478" x2="470" y2="448" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFD66B"/>
+      <stop offset="1" stop-color="#5BF0D0"/>
+    </linearGradient>
+    <linearGradient id="beamD" x1="162" y1="492" x2="252" y2="454" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FF9F8B"/>
+      <stop offset="1" stop-color="#7A99FF"/>
+    </linearGradient>
+  </defs>
+</svg>

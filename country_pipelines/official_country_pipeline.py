@@ -380,6 +380,7 @@ PROFESSOR_OUTPUT_COLUMNS = [
 
 CanonicalNameFn = Callable[[str], str]
 LoadInstitutionsFn = Callable[[], list[dict]]
+ProgressCallbackFn = Callable[[dict], None]
 
 
 @dataclass(frozen=True)
@@ -1023,6 +1024,7 @@ class OfficialCountryProfessorCrawler:
         workers: int = 6,
         *,
         output_dir: Path | str | None = None,
+        progress_callback: ProgressCallbackFn | None = None,
     ):
         self.config = config
         self.max_pages = max_pages
@@ -1030,6 +1032,7 @@ class OfficialCountryProfessorCrawler:
         self.workers = workers
         self.country_name = config.country_name
         self.output_paths = build_output_paths(config.country_name, output_dir)
+        self.progress_callback = progress_callback
         self.session = requests.Session()
         self.session.headers.update(HEADERS)
         self.crawl_log: list[dict] = []
@@ -1078,6 +1081,17 @@ class OfficialCountryProfessorCrawler:
                 ),
             },
         ]
+
+    def emit_progress(self, phase: str, message: str, **payload: object) -> None:
+        if self.progress_callback is None:
+            return
+        event = {
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "phase": phase,
+            "message": message,
+        }
+        event.update(payload)
+        self.progress_callback(event)
 
     def fetch_text(
         self,
@@ -1866,6 +1880,12 @@ class OfficialCountryProfessorCrawler:
         return 3
 
     def crawl_university(self, record: InstitutionRecord) -> tuple[list[dict], dict]:
+        self.emit_progress(
+            "crawl_started",
+            f"Started crawling {record.university}",
+            university=record.university,
+            official_domain=record.official_domain,
+        )
         if not record.official_domain:
             summary = {
                 "university": record.university,
@@ -1875,6 +1895,12 @@ class OfficialCountryProfessorCrawler:
                 "records_found": 0,
                 "notes": record.discovery_notes,
             }
+            self.emit_progress(
+                "crawl_skipped",
+                f"Skipped {record.university} because no official domain was resolved.",
+                university=record.university,
+                summary=summary,
+            )
             return [], summary
 
         seed_urls = self.seed_urls_for_record(record)
@@ -2061,6 +2087,12 @@ class OfficialCountryProfessorCrawler:
             summary["zero_yield_reason"] = (
                 "parser_limitations" if stats["relevant_pages_checked"] > 0 else "no_public_data_found"
             )
+        self.emit_progress(
+            "crawl_completed",
+            f"Completed {record.university}",
+            university=record.university,
+            summary=summary,
+        )
         return rows, summary
 
     @staticmethod
@@ -2126,7 +2158,19 @@ class OfficialCountryProfessorCrawler:
         )
 
     def run(self, limit: int | None = None, selected_institutions: list[str] | None = None) -> dict:
+        self.emit_progress(
+            "run_started",
+            f"Preparing {self.country_name} extraction run.",
+            country=self.country_name,
+            output_dir=str(self.output_paths["output_dir"]),
+        )
         universities = self.load_seed_institutions()
+        self.emit_progress(
+            "seed_loaded",
+            f"Loaded {len(universities)} seed institutions from official sources.",
+            country=self.country_name,
+            seed_institutions=len(universities),
+        )
         if selected_institutions:
             wanted = {
                 self.config.canonicalize_institution_name(name) for name in selected_institutions
@@ -2136,6 +2180,12 @@ class OfficialCountryProfessorCrawler:
                 for university in universities
                 if self.config.canonicalize_institution_name(university["university"]) in wanted
             ]
+            self.emit_progress(
+                "seed_filtered",
+                f"Filtered queue to {len(universities)} requested institutions.",
+                selected_institutions=selected_institutions,
+                seed_institutions=len(universities),
+            )
         priority_index = {
             self.config.canonicalize_institution_name(name): idx
             for idx, name in enumerate(self.config.prioritized_institutions)
@@ -2151,6 +2201,12 @@ class OfficialCountryProfessorCrawler:
         )
         if limit is not None:
             universities = universities[:limit]
+            self.emit_progress(
+                "seed_limited",
+                f"Applied limit. Processing first {len(universities)} institutions.",
+                seed_institutions=len(universities),
+                limit=limit,
+            )
 
         resolved_records: list[InstitutionRecord] = []
         for university in universities:
@@ -2169,6 +2225,14 @@ class OfficialCountryProfessorCrawler:
                     "notes": record.discovery_notes,
                 }
             )
+            self.emit_progress(
+                "domain_resolved",
+                f"Domain check finished for {record.university}",
+                university=record.university,
+                official_domain=record.official_domain,
+                domain_status=record.domain_status,
+                discovery_method=record.discovery_method,
+            )
 
         all_rows: list[dict] = []
         with ThreadPoolExecutor(max_workers=self.workers) as executor:
@@ -2180,6 +2244,14 @@ class OfficialCountryProfessorCrawler:
                 rows, summary = future.result()
                 self.coverage_rows.append(summary)
                 all_rows.extend(rows)
+                self.emit_progress(
+                    "coverage_updated",
+                    f"Coverage updated for {summary['university']}",
+                    university=summary["university"],
+                    records_found=summary.get("records_found", 0),
+                    pages_crawled=summary.get("pages_crawled", 0),
+                    relevant_pages_checked=summary.get("relevant_pages_checked", 0),
+                )
 
         final_rows = self.deduplicate_records(all_rows)
         final_by_university = Counter(row["university"] for row in final_rows)
@@ -2204,6 +2276,11 @@ class OfficialCountryProfessorCrawler:
         ]
 
         self.output_paths["output_dir"].mkdir(parents=True, exist_ok=True)
+        self.emit_progress(
+            "export_started",
+            "Writing CSV and Excel outputs.",
+            output_dir=str(self.output_paths["output_dir"]),
+        )
         professor_df = pd.DataFrame(final_rows, columns=PROFESSOR_OUTPUT_COLUMNS)
         professor_df.to_csv(self.output_paths["csv"], index=False)
         write_excel_workbook(
@@ -2217,13 +2294,25 @@ class OfficialCountryProfessorCrawler:
             summary_rows=summary_rows,
         )
 
-        return {
+        result = {
             "summary": {row["metric"]: row["value"] for row in summary_rows},
             "domains": self.domain_rows,
             "coverage_queue": self.coverage_rows,
             "excluded_count_by_reason": dict(Counter(row["reason"] for row in self.excluded_rows)),
             "institutions_with_records": sorted(final_by_university.items()),
+            "output_paths": {
+                "output_dir": str(self.output_paths["output_dir"]),
+                "csv": str(self.output_paths["csv"]),
+                "xlsx": str(self.output_paths["xlsx"]),
+            },
         }
+        self.emit_progress(
+            "run_completed",
+            f"{self.country_name} extraction completed.",
+            summary=result["summary"],
+            output_paths=result["output_paths"],
+        )
+        return result
 
 def run_country_pipeline(
     config: CountryPipelineConfig,
@@ -2234,6 +2323,7 @@ def run_country_pipeline(
     workers: int = 6,
     selected_institutions: list[str] | None = None,
     output_dir: Path | str | None = None,
+    progress_callback: ProgressCallbackFn | None = None,
 ) -> dict:
     crawler = OfficialCountryProfessorCrawler(
         config=config,
@@ -2241,5 +2331,6 @@ def run_country_pipeline(
         second_pass_pages=second_pass_pages,
         workers=workers,
         output_dir=output_dir,
+        progress_callback=progress_callback,
     )
     return crawler.run(limit=limit, selected_institutions=selected_institutions)
