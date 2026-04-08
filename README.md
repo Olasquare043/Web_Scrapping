@@ -70,6 +70,30 @@ The dashboard lets employees:
 Use the dashboard for office operations.
 Use the CLI when you want more direct scripting or automation.
 
+## Deploy On Render
+
+This repository now includes both a root `Dockerfile` and a root `render.yaml`.
+
+You can deploy in either of these ways:
+
+- create a Render Web Service and let Render detect the root `Dockerfile`
+- or sync the included `render.yaml` Blueprint so Render creates the service with the health check already configured
+
+Basic Render setup:
+
+1. Create a new Web Service from this GitHub repository.
+2. Let Render use the repository `Dockerfile`.
+3. Deploy the service without adding a separate start command.
+4. Optional: set the health check path to `/healthz`.
+
+The container starts the Dialogic Solution dashboard directly and binds to Render's `PORT` automatically.
+
+Notes for hosted use:
+
+- the dashboard download buttons work normally on Render
+- local folder reveal is disabled automatically on hosted Linux deployments
+- if you want outputs to survive restarts or redeploys, attach a persistent disk in Render and write output folders to that mounted path
+
 ## Nigeria Workflow
 
 The Nigeria workflow stays separate and unchanged in structure.

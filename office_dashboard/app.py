@@ -62,6 +62,18 @@ def ensure_repo_relative_path(path_value: str) -> str:
     return str((ROOT / candidate).resolve())
 
 
+def resolve_artifact_path(job: "DashboardJob", artifact: str) -> Path:
+    if artifact not in ARTIFACT_KEYS:
+        raise ValueError("Unknown artifact.")
+    target = job.output_paths.get(artifact)
+    if not target:
+        raise FileNotFoundError("Artifact is not ready yet.")
+    resolved = Path(target).resolve()
+    if not resolved.exists():
+        raise FileNotFoundError("Artifact file not found.")
+    return resolved
+
+
 @dataclass
 class DashboardJob:
     id: str
@@ -286,17 +298,6 @@ def create_app() -> Flask:
 
         threading.Thread(target=runner, daemon=True, name=f"dialogic-job-{job.id}").start()
 
-    def resolve_artifact_path(job: DashboardJob, artifact: str) -> Path:
-        if artifact not in ARTIFACT_KEYS:
-            abort(404, description="Unknown artifact.")
-        target = job.output_paths.get(artifact)
-        if not target:
-            abort(404, description="Artifact not ready.")
-        resolved = Path(target).resolve()
-        if not resolved.exists():
-            abort(404, description="Artifact file not found.")
-        return resolved
-
     @app.get("/")
     def index() -> str:
         return render_template(
@@ -304,7 +305,12 @@ def create_app() -> Flask:
             brand_name="Dialogic Solution",
             product_name="Atlas Faculty Intelligence Console",
             example_countries=example_countries,
+            reveal_supported=hasattr(os, "startfile"),
         )
+
+    @app.get("/healthz")
+    def healthcheck() -> Response:
+        return jsonify({"ok": True, "service": "dialogic-dashboard"})
 
     @app.get("/api/jobs")
     def jobs_list() -> Response:
@@ -380,7 +386,12 @@ def create_app() -> Flask:
     @app.get("/api/jobs/<job_id>/artifacts/<artifact>")
     def jobs_download_artifact(job_id: str, artifact: str) -> Response:
         job = require_job(job_id)
-        path = resolve_artifact_path(job, artifact)
+        try:
+            path = resolve_artifact_path(job, artifact)
+        except ValueError as exc:
+            abort(404, description=str(exc))
+        except FileNotFoundError as exc:
+            abort(404, description=str(exc))
         if path.is_dir():
             return jsonify({"path": str(path)})
         return send_file(path, as_attachment=True)
@@ -388,11 +399,19 @@ def create_app() -> Flask:
     @app.post("/api/jobs/<job_id>/reveal/<artifact>")
     def jobs_reveal_artifact(job_id: str, artifact: str) -> Response:
         job = require_job(job_id)
-        path = resolve_artifact_path(job, artifact)
+        try:
+            path = resolve_artifact_path(job, artifact)
+        except ValueError as exc:
+            return jsonify({"error": str(exc)}), 404
+        except FileNotFoundError as exc:
+            return jsonify({"error": str(exc)}), 404
         reveal_target = path if artifact == "output_dir" else path.parent
         if not hasattr(os, "startfile"):
             return jsonify({"error": "Reveal is supported only on Windows."}), 400
-        os.startfile(str(reveal_target))  # type: ignore[attr-defined]
+        try:
+            os.startfile(str(reveal_target))  # type: ignore[attr-defined]
+        except OSError as exc:
+            return jsonify({"error": f"Unable to open output folder: {exc}"}), 500
         return jsonify({"ok": True, "path": str(reveal_target)})
 
     return app

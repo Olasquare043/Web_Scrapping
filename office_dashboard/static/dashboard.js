@@ -6,6 +6,7 @@
   };
 
   const form = document.getElementById("run-form");
+  const revealSupported = document.body.dataset.revealSupported === "true";
   const runButton = document.getElementById("run-button");
   const refreshButton = document.getElementById("refresh-jobs");
   const globalStatus = document.getElementById("global-status");
@@ -46,7 +47,7 @@
     run_started: "Run Initialization",
     seed_loaded: "Official Source Discovery",
     seed_filtered: "Institution Focus Applied",
-    seed_limited: "Smoke Limit Applied",
+    seed_limited: "Preview Limit Applied",
     domain_resolved: "Domain Validation",
     crawl_started: "Institution Crawl Started",
     coverage_updated: "Coverage Update",
@@ -62,6 +63,20 @@
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return value;
     return date.toLocaleString();
+  }
+
+  function pathLeaf(pathValue) {
+    if (!pathValue) return "";
+    const parts = String(pathValue).split(/[\\/]/).filter(Boolean);
+    return parts.length ? parts[parts.length - 1] : String(pathValue);
+  }
+
+  async function parseResponsePayload(response) {
+    const contentType = response.headers.get("content-type") || "";
+    if (contentType.includes("application/json")) {
+      return response.json();
+    }
+    return { error: (await response.text()).trim() };
   }
 
   function setStatus(status, label) {
@@ -117,18 +132,28 @@
 
   function updateArtifacts(snapshot) {
     const hasOutputs = snapshot.output_paths && snapshot.output_paths.output_dir;
+    const outputDir = snapshot.output_paths && snapshot.output_paths.output_dir;
+    const csvPath = snapshot.output_paths && snapshot.output_paths.csv;
+    const xlsxPath = snapshot.output_paths && snapshot.output_paths.xlsx;
     artifactText.output_dir.textContent = hasOutputs
-      ? snapshot.output_paths.output_dir
+      ? `Ready: ${pathLeaf(outputDir)}`
       : "Run a job to generate an output folder.";
-    artifactText.csv.textContent = snapshot.output_paths && snapshot.output_paths.csv
-      ? snapshot.output_paths.csv
+    artifactText.csv.textContent = csvPath
+      ? `Ready: ${pathLeaf(csvPath)}`
       : "CSV becomes available after a successful run.";
-    artifactText.xlsx.textContent = snapshot.output_paths && snapshot.output_paths.xlsx
-      ? snapshot.output_paths.xlsx
+    artifactText.xlsx.textContent = xlsxPath
+      ? `Ready: ${pathLeaf(xlsxPath)}`
       : "Workbook includes Summary, Crawl Log, Domains, and Review_Excluded.";
 
-    revealButton.disabled = !hasOutputs;
+    artifactText.output_dir.title = outputDir || "";
+    artifactText.csv.title = csvPath || "";
+    artifactText.xlsx.title = xlsxPath || "";
+
+    revealButton.disabled = !hasOutputs || !revealSupported;
     revealButton.dataset.jobId = snapshot.id || "";
+    revealButton.title = revealSupported
+      ? "Open the output folder on this machine."
+      : "Folder reveal is available only on a local Windows deployment.";
 
     ["csv", "xlsx"].forEach((key) => {
       const link = artifactLinks[key];
@@ -156,6 +181,9 @@
   }
 
   function renderSnapshot(snapshot, options = {}) {
+    if (snapshot.id) {
+      state.activeJobId = snapshot.id;
+    }
     const lastEvent = options.lastEvent || (snapshot.events_tail || []).slice(-1)[0];
     const stage = lastEvent ? phaseLabels[lastEvent.phase] || lastEvent.phase : "Standby";
     const message = lastEvent ? lastEvent.message : "Launch a run to begin streaming progress from the extraction pipeline.";
@@ -206,8 +234,9 @@
       .map((job) => {
         const summary = job.summary || {};
         const rowCount = summary.final_professor_rows != null ? summary.final_professor_rows : job.live_stats.records_found;
+        const isActive = state.activeJobId && state.activeJobId === job.id;
         return `
-          <article class="recent-job">
+          <article class="recent-job ${isActive ? "active" : ""}" data-job-id="${job.id}" role="button" tabindex="0">
             <div class="recent-job-top">
               <h3>${job.country}</h3>
               <span class="status-label ${job.status}">${job.status}</span>
@@ -223,7 +252,24 @@
   async function refreshRecentJobs() {
     const response = await fetch("/api/jobs");
     const payload = await response.json();
-    renderRecentJobs(payload.jobs || []);
+    const jobs = payload.jobs || [];
+    renderRecentJobs(jobs);
+    if (!state.activeJobId && jobs.length) {
+      selectJob(jobs[0].id, false);
+    }
+  }
+
+  async function selectJob(jobId, connectStream = true) {
+    if (!jobId) return;
+    const response = await fetch(`/api/jobs/${jobId}`);
+    const payload = await response.json();
+    const snapshot = payload.job;
+    renderSnapshot(snapshot);
+    renderInitialLogs(snapshot);
+    renderRecentJobs((await (await fetch("/api/jobs")).json()).jobs || []);
+    if (connectStream) {
+      connectEvents(jobId);
+    }
   }
 
   function closeEventSource() {
@@ -312,19 +358,39 @@
   }
 
   async function revealArtifact() {
-    if (!state.activeJobId) return;
-    const response = await fetch(`/api/jobs/${state.activeJobId}/reveal/output_dir`, {
+    const jobId = revealButton.dataset.jobId || state.activeJobId;
+    if (!jobId) {
+      alert("Select or run a job first so the output folder is available.");
+      return;
+    }
+    const response = await fetch(`/api/jobs/${jobId}/reveal/output_dir`, {
       method: "POST",
     });
+    const payload = await parseResponsePayload(response);
     if (!response.ok) {
-      const payload = await response.json();
       alert(payload.error || "Unable to reveal the output folder.");
+      return;
+    }
+    if (payload && payload.path) {
+      console.info(`Output folder opened: ${payload.path}`);
     }
   }
 
   form.addEventListener("submit", launchRun);
   refreshButton.addEventListener("click", refreshRecentJobs);
   revealButton.addEventListener("click", revealArtifact);
+  recentJobs.addEventListener("click", (event) => {
+    const card = event.target.closest(".recent-job");
+    if (!card) return;
+    selectJob(card.dataset.jobId);
+  });
+  recentJobs.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    const card = event.target.closest(".recent-job");
+    if (!card) return;
+    event.preventDefault();
+    selectJob(card.dataset.jobId);
+  });
   window.addEventListener("beforeunload", closeEventSource);
 
   resetConsole();

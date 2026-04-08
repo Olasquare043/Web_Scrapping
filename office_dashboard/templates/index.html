@@ -6,7 +6,7 @@
   <title>{{ brand_name }} | {{ product_name }}</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='dashboard.css') }}">
 </head>
-<body>
+<body data-reveal-supported="{{ 'true' if reveal_supported else 'false' }}">
   <div class="ambient ambient-a"></div>
   <div class="ambient ambient-b"></div>
   <div class="ambient-grid"></div>
@@ -110,7 +110,7 @@
             <label class="field">
               <span>Institution Limit</span>
               <input id="limit" name="limit" type="number" min="1" placeholder="Blank for full queue">
-              <small>Use only for smoke tests.</small>
+              <small>Optional control for smaller preview runs.</small>
             </label>
 
             <label class="field">
@@ -140,7 +140,7 @@
             <label class="field field-large">
               <span>Output Folder Override</span>
               <input id="output_dir" name="output_dir" placeholder="Blank to use <country>_profs">
-              <small>Use `Test/...` for temporary validation runs.</small>
+              <small>Leave blank to create the standard country output folder automatically.</small>
             </label>
           </div>
 
@@ -250,7 +250,7 @@
             <p class="eyebrow">Artifacts</p>
             <h2>Open Or Download Outputs</h2>
           </div>
-          <span class="panel-badge panel-badge-muted">Windows Ready</span>
+          <span class="panel-badge panel-badge-muted">Artifact Access</span>
         </div>
 
         <div class="artifact-grid">
@@ -263,7 +263,9 @@
               <p id="artifact-output-dir">Run a job to generate an output folder.</p>
             </div>
             <div class="artifact-actions">
-              <button data-artifact="output_dir" data-action="reveal" class="artifact-button" disabled>Reveal</button>
+              <button data-artifact="output_dir" data-action="reveal" class="artifact-button" disabled>
+                {% if reveal_supported %}Reveal{% else %}Server Folder{% endif %}
+              </button>
             </div>
           </article>
 

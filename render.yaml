@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: dialogic-solution-dashboard
+    runtime: docker
+    region: oregon
+    plan: starter
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /healthz
+    autoDeployTrigger: commit
